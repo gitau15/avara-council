@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avara - The Council</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f9; color: #333; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
+        h1 { color: #4a4a4a; margin-bottom: 0.5rem; }
+        p { color: #666; margin-bottom: 2rem; }
+        textarea { width: 100%; height: 150px; padding: 10px; border-radius: 4px; border: 1px solid #ccc; font-size: 1rem; margin-bottom: 1rem; box-sizing: border-box; }
+        button { background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-size: 1rem; cursor: pointer; width: 100%; }
+        button:hover { background-color: #0056b3; }
+        #response { margin-top: 2rem; padding: 1rem; background-color: #e9ecef; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>The Council of Avara</h1>
+        <p>Present your issue to the council and await their collective wisdom.</p>
+
+        <form id="decision-form">
+            <textarea id="issue" name="prompt" placeholder="e.g., Should I accept this job offer in a new city, or stay in my current role with more stability?" required></textarea>
+            <button type="submit">Seek Wisdom</button>
+        </form>
+
+        <div id="response">
+            <h3>The Council's Decision:</h3>
+            <p id="response-text"></p>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('decision-form');
+        const responseDiv = document.getElementById('response');
+        const responseText = document.getElementById('response-text');
+
+        // --- PASTE YOUR N8N WEBHOOK URL HERE ---
+        const n8nWebhookUrl = 'https://<your-id>.app.n8n.cloud/webhook/avara-council';
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Stop the form from doing a full page reload
+            const issue = document.getElementById('issue').value;
+
+            // Show a loading message
+            responseDiv.style.display = 'block';
+            responseText.textContent = 'The council is deliberating... This may take a few moments.';
+
+            try {
+                const response = await fetch(n8nWebhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ prompt: issue }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json(); // n8n sends back the final JSON from our workflow
+
+                // Display the final result
+                responseText.innerHTML = `
+                    <strong>Winning Option:</strong> ${result.winner}<br><br>
+                    <strong>The Council's Advice:</strong><br>${result.winningResponse}
+                `;
+
+            } catch (error) {
+                console.error('Error:', error);
+                responseText.textContent = 'An error occurred while consulting the council. Please check the n8n workflow and try again.';
+            }
+        });
+    </script>
+
+</body>
+</html>
